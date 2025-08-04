@@ -17,12 +17,35 @@ interface RecordingSession {
   dataPoints: number;
 }
 
-export const EnhancedDataRecording = () => {
-  const [isRecording, setIsRecording] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
-  const [duration, setDuration] = useState(60);
+interface EnhancedDataRecordingProps {
+  isRecording?: boolean;
+  isPaused?: boolean;
+  duration?: number;
+  currentTime?: number;
+  onDurationChange?: (duration: number) => void;
+  onCurrentTimeChange?: (time: number) => void;
+}
+
+export const EnhancedDataRecording = ({
+  isRecording: externalIsRecording = false,
+  isPaused: externalIsPaused = false,
+  duration: externalDuration = 60,
+  currentTime: externalCurrentTime = 0,
+  onDurationChange,
+  onCurrentTimeChange,
+}: EnhancedDataRecordingProps) => {
+  const [internalIsRecording, setInternalIsRecording] = useState(false);
+  const [internalIsPaused, setInternalIsPaused] = useState(false);
+  const [internalDuration, setInternalDuration] = useState(60);
+  const [internalCurrentTime, setInternalCurrentTime] = useState(0);
+  
+  // Use external props if provided, otherwise use internal state
+  const isRecording = externalIsRecording || internalIsRecording;
+  const isPaused = externalIsPaused || internalIsPaused;
+  const duration = externalDuration || internalDuration;
+  const currentTime = externalCurrentTime || internalCurrentTime;
+
   const [customDuration, setCustomDuration] = useState("");
-  const [currentTime, setCurrentTime] = useState(0);
   const [sessions, setSessions] = useState<RecordingSession[]>([]);
   const { toast } = useToast();
 
@@ -41,25 +64,31 @@ export const EnhancedDataRecording = () => {
 
     if (isRecording && !isPaused) {
       interval = setInterval(() => {
-        setCurrentTime(prev => {
-          if (prev >= duration) {
-            handleStopRecording();
-            return prev;
-          }
-          return prev + 1;
-        });
+        const newTime = currentTime + 1;
+        if (onCurrentTimeChange) {
+          onCurrentTimeChange(newTime);
+        } else {
+          setInternalCurrentTime(prev => {
+            if (prev >= duration) {
+              handleStopRecording();
+              return prev;
+            }
+            return prev + 1;
+          });
+        }
       }, 1000);
     }
 
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isRecording, isPaused, duration]);
+  }, [isRecording, isPaused, duration, currentTime, onCurrentTimeChange]);
 
   const handleStartRecording = () => {
-    setIsRecording(true);
-    setIsPaused(false);
-    setCurrentTime(0); // Reset timer immediately when starting
+    // This function is now unused since controls are external
+    setInternalIsRecording(true);
+    setInternalIsPaused(false);
+    setInternalCurrentTime(0);
     
     toast({
       title: "Enregistrement démarré",
@@ -68,7 +97,8 @@ export const EnhancedDataRecording = () => {
   };
 
   const handlePauseRecording = () => {
-    setIsPaused(!isPaused);
+    // This function is now unused since controls are external
+    setInternalIsPaused(!isPaused);
     
     toast({
       title: isPaused ? "Enregistrement repris" : "Enregistrement en pause",
@@ -77,8 +107,9 @@ export const EnhancedDataRecording = () => {
   };
 
   const handleStopRecording = () => {
-    setIsRecording(false);
-    setIsPaused(false);
+    // This function is now unused since controls are external
+    setInternalIsRecording(false);
+    setInternalIsPaused(false);
     
     const newSession: RecordingSession = {
       id: Date.now().toString(),
@@ -98,7 +129,11 @@ export const EnhancedDataRecording = () => {
     
     // Reset timer after stop
     setTimeout(() => {
-      setCurrentTime(0);
+      if (onCurrentTimeChange) {
+        onCurrentTimeChange(0);
+      } else {
+        setInternalCurrentTime(0);
+      }
     }, 100);
   };
 
@@ -141,10 +176,14 @@ export const EnhancedDataRecording = () => {
   };
 
   const handleDurationChange = (value: string) => {
-    if (value === "custom") {
-      setDuration(parseInt(customDuration) || 60);
+    const newDuration = value === "custom" 
+      ? parseInt(customDuration) || 60 
+      : parseInt(value);
+    
+    if (onDurationChange) {
+      onDurationChange(newDuration);
     } else {
-      setDuration(parseInt(value));
+      setInternalDuration(newDuration);
     }
   };
 

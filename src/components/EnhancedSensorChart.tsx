@@ -28,7 +28,13 @@ export const EnhancedSensorChart = () => {
     sensor3: true,
   });
   const [isPaused, setIsPaused] = useState(false);
-  const [isRecording, setIsRecording] = useState(false); // New state for recording
+  const [isRecording, setIsRecording] = useState(false);
+  
+  // Recording states for EnhancedDataRecording
+  const [recordingDuration, setRecordingDuration] = useState(60);
+  const [recordingCurrentTime, setRecordingCurrentTime] = useState(0);
+  const [isRecordingPaused, setIsRecordingPaused] = useState(false);
+  
   const [thresholds, setThresholds] = useState({
     general: { warning: 2048 },
   });
@@ -310,10 +316,12 @@ export const EnhancedSensorChart = () => {
     setIsRecording(!isRecording);
     if (!isRecording) {
       // Start recording
-      setResetTrigger(prev => prev + 1); // Reset timer display first
+      setResetTrigger(prev => prev + 1);
+      setRecordingCurrentTime(0);
+      setIsRecordingPaused(false);
       setTimeout(() => {
-        setTimerRunning(true); // Start timer immediately after reset
-      }, 100); // Small delay to ensure reset is processed
+        setTimerRunning(true);
+      }, 100);
       toast({
         title: "Enregistrement démarré",
         description: "Les données sont maintenant enregistrées",
@@ -321,11 +329,30 @@ export const EnhancedSensorChart = () => {
     } else {
       // Stop recording
       setTimerRunning(false);
+      setIsRecordingPaused(false);
       toast({
         title: "Enregistrement arrêté",
         description: "L'enregistrement des données est terminé",
       });
     }
+  };
+
+  const handleRecordingPauseToggle = () => {
+    setIsRecordingPaused(!isRecordingPaused);
+    toast({
+      title: isRecordingPaused ? "Enregistrement repris" : "Enregistrement en pause",
+      description: `Temps écoulé: ${Math.floor(recordingCurrentTime / 60)}:${String(recordingCurrentTime % 60).padStart(2, '0')}`,
+    });
+  };
+
+  const handleRecordingStop = () => {
+    setIsRecording(false);
+    setIsRecordingPaused(false);
+    setTimerRunning(false);
+    toast({
+      title: "Enregistrement terminé",
+      description: "Session sauvegardée avec succès",
+    });
   };
 
   const handlePauseToggle = () => {
@@ -387,7 +414,14 @@ export const EnhancedSensorChart = () => {
           <SensorDisplay data={data} sensorConfigs={sensorConfigs} />
         </div>
         <div className="lg:w-80">
-          <EnhancedDataRecording />
+          <EnhancedDataRecording 
+            isRecording={isRecording}
+            isPaused={isRecordingPaused}
+            duration={recordingDuration}
+            currentTime={recordingCurrentTime}
+            onDurationChange={setRecordingDuration}
+            onCurrentTimeChange={setRecordingCurrentTime}
+          />
         </div>
       </div>
 
@@ -411,11 +445,11 @@ export const EnhancedSensorChart = () => {
         isPaused={isPaused}
         onPauseToggle={handlePauseToggle}
         onRecordingToggle={handleRecordingToggle}
-        recordingDuration={60}
-        recordingCurrentTime={0}
-        isRecordingPaused={false}
-        onRecordingPauseToggle={() => {}}
-        onRecordingStop={() => {}}
+        recordingDuration={recordingDuration}
+        recordingCurrentTime={recordingCurrentTime}
+        isRecordingPaused={isRecordingPaused}
+        onRecordingPauseToggle={handleRecordingPauseToggle}
+        onRecordingStop={handleRecordingStop}
       />
 
       {/* Timer */}

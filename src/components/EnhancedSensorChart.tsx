@@ -121,6 +121,8 @@ export const EnhancedSensorChart = () => {
     const minutes = String(now.getMinutes()).padStart(2, '0');
     const timestamp = `${year}${month}${day}_${hours}${minutes}`;
     
+    console.log('Timestamp généré:', timestamp); // Debug
+    
     const csvContent = [
       ["Timestamp (ms)", "Temps", "Capteur 1", "Capteur 2", "Capteur 3"],
       ...data.map(row => [row.timestamp, row.time, row.sensor1, row.sensor2, row.sensor3])

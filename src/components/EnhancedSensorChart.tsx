@@ -56,15 +56,29 @@ export const EnhancedSensorChart = () => {
     { key: "sensor3", label: "Capteur 3", color: "hsl(var(--sensor-3))", bgColor: "bg-sensor-3" },
   ];
 
-  // Initialisation
+  // Initialisation avec des données de test
   useEffect(() => {
-    setData([]);
-    setAllData([]);
-    setTimerRunning(false);
-  }, []);
+    console.log('Initializing chart data...');
+    // Générer quelques données de test si pas de connexion hardware
+    if (!isConnected) {
+      const testData: DataPoint[] = Array.from({ length: 10 }, (_, i) => ({
+        timestamp: Date.now() - (10 - i) * 1000,
+        time: `00:${String(i).padStart(2, '0')}`,
+        sensor1: Math.random() * 2000 + 1000,
+        sensor2: Math.random() * 2000 + 500,
+        sensor3: Math.random() * 2000 + 800,
+      }));
+      console.log('Setting test data:', testData);
+      setData(testData);
+      setAllData(testData);
+      setTimerRunning(true);
+    }
+  }, [isConnected]);
 
   // Mise à jour avec les vraies données du hardware
   useEffect(() => {
+    console.log('Hardware connection status:', { isConnected, currentData, isPaused });
+    
     if (!isConnected || !currentData || isPaused) {
       return;
     }
@@ -77,9 +91,13 @@ export const EnhancedSensorChart = () => {
       sensor3: currentData.sensor3,
     };
 
+    console.log('Adding new data point:', newPoint);
+
     setData(prev => {
       const newData = [...prev, newPoint];
-      return newData.slice(-windowSize);
+      const windowedData = newData.slice(-windowSize);
+      console.log('Current data length:', windowedData.length);
+      return windowedData;
     });
     
     setAllData(prev => [...prev, newPoint]);

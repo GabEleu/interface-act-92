@@ -113,7 +113,10 @@ export const EnhancedSensorChart = () => {
   };
 
   const exportData = () => {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('fr-FR').replace(/\//g, '-');
+    const timeStr = now.toLocaleTimeString('fr-FR', { hour12: false }).replace(/:/g, '-');
+    const timestamp = `${dateStr}_${timeStr}`;
     const currentDataset = historicalDatasets.find(ds => ds.id === selectedDataset);
     const datasetLabel = currentDataset?.label || 'données-inconnues';
     
@@ -132,7 +135,7 @@ export const EnhancedSensorChart = () => {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${sanitizedLabel}-${timestamp}.csv`;
+    a.download = `${sanitizedLabel}_${timestamp}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
     

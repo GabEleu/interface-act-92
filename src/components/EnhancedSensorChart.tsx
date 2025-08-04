@@ -34,12 +34,12 @@ export const EnhancedSensorChart = () => {
   const { toast } = useToast();
   const { isConnected, currentData, isConnecting, connect, disconnect } = useHardwareConnection();
 
-  // Historical datasets simulation
+  // Historical datasets with proper timestamps
   const historicalDatasets = [
     { id: "current", label: "Données actuelles" },
-    { id: "session1", label: "Session 1 - 15/01/2024" },
-    { id: "session2", label: "Session 2 - 14/01/2024" },
-    { id: "session3", label: "Session 3 - 13/01/2024" },
+    { id: "session1", label: "Enregistrement du 15/01/2024 à 14:30:25" },
+    { id: "session2", label: "Enregistrement du 14/01/2024 à 09:15:48" },
+    { id: "session3", label: "Enregistrement du 13/01/2024 à 16:42:12" },
   ];
 
   const sensorConfigs = [
@@ -114,6 +114,15 @@ export const EnhancedSensorChart = () => {
 
   const exportData = () => {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const currentDataset = historicalDatasets.find(ds => ds.id === selectedDataset);
+    const datasetLabel = currentDataset?.label || 'données-inconnues';
+    
+    // Create filename with timestamp and dataset info
+    const sanitizedLabel = datasetLabel
+      .replace(/[^a-zA-Z0-9\s-]/g, '') // Remove special characters
+      .replace(/\s+/g, '-') // Replace spaces with dashes
+      .toLowerCase();
+    
     const csvContent = [
       ["Timestamp (ms)", "Temps", "Capteur 1", "Capteur 2", "Capteur 3"],
       ...data.map(row => [row.timestamp, row.time, row.sensor1, row.sensor2, row.sensor3])
@@ -123,7 +132,7 @@ export const EnhancedSensorChart = () => {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `fsr-data-${selectedDataset}-${timestamp}.csv`;
+    a.download = `${sanitizedLabel}-${timestamp}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
     

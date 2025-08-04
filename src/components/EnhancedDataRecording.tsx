@@ -196,39 +196,8 @@ export const EnhancedDataRecording = () => {
           </div>
         </div>
 
-        {/* Recording Controls */}
-        <div className="flex items-center gap-4">
-          {!isRecording ? (
-            <Button onClick={handleStartRecording} className="bg-primary hover:bg-primary-hover">
-              <Play className="h-4 w-4 mr-2" />
-              Démarrer l'enregistrement
-            </Button>
-          ) : (
-            <>
-              <Button onClick={handlePauseRecording} variant="secondary">
-                {isPaused ? <Play className="h-4 w-4 mr-2" /> : <Pause className="h-4 w-4 mr-2" />}
-                {isPaused ? "Reprendre" : "Pause"}
-              </Button>
-              <Button onClick={handleStopRecording} variant="destructive">
-                <Square className="h-4 w-4 mr-2" />
-                Arrêter l'enregistrement
-              </Button>
-            </>
-          )}
-          
-          <Badge variant={isRecording ? (isPaused ? "outline" : "default") : "secondary"}>
-            {isRecording ? (isPaused ? "En pause" : "En cours") : "Arrêté"}
-          </Badge>
-          
-          {/* Timer Display */}
-          <div className="flex items-center gap-2 text-sm font-mono">
-            <Clock className="h-4 w-4" />
-            <span className={isRecording && !isPaused ? "text-primary" : "text-muted-foreground"}>
-              {formatTime(currentTime)}
-            </span>
-          </div>
-        </div>
-
+        {/* Recording Controls - Moved to ChartControls */}
+        
         {/* Progress Display */}
         {isRecording && (
           <div className="space-y-2">

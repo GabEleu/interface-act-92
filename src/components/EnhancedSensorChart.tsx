@@ -411,6 +411,11 @@ export const EnhancedSensorChart = () => {
         isPaused={isPaused}
         onPauseToggle={handlePauseToggle}
         onRecordingToggle={handleRecordingToggle}
+        recordingDuration={60}
+        recordingCurrentTime={0}
+        isRecordingPaused={false}
+        onRecordingPauseToggle={() => {}}
+        onRecordingStop={() => {}}
       />
 
       {/* Timer */}

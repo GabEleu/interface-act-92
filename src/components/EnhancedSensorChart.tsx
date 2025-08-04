@@ -124,8 +124,8 @@ export const EnhancedSensorChart = () => {
     console.log('Timestamp généré:', timestamp); // Debug
     
     const csvContent = [
-      ["Timestamp (ms)", "Temps", "Capteur 1", "Capteur 2", "Capteur 3"],
-      ...data.map(row => [row.timestamp, row.time, row.sensor1, row.sensor2, row.sensor3])
+      ["Timestamp (ms)", "Capteur 1", "Capteur 2", "Capteur 3"],
+      ...data.map(row => [row.timestamp, row.sensor1, row.sensor2, row.sensor3])
     ].map(row => row.join(",")).join("\n");
     
     const blob = new Blob([csvContent], { type: "text/csv" });

@@ -8,27 +8,35 @@ import { useHardwareConnection } from "@/hooks/useHardwareConnection";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
+interface DataPoint {
+  timestamp: number;
+  time: string;
+  sensor1: number;
+  sensor2: number;
+  sensor3: number;
+}
+
 export const EnhancedSensorChart = () => {
-  const [data, setData] = useState<any[]>([]);
-  const [allData, setAllData] = useState<any[]>([]); // Store all data for overlay
-  const [overlayDatasets, setOverlayDatasets] = useState<string[]>([]);
+  const [data, setData] = useState<DataPoint[]>([]);
+  const [allData, setAllData] = useState<DataPoint[]>([]);
+  const [selectedDatasets, setSelectedDatasets] = useState<string[]>([]);
+  const [historicalData, setHistoricalData] = useState<Record<string, DataPoint[]>>({});
   const [visibleSensors, setVisibleSensors] = useState({
     sensor1: true,
     sensor2: true,
     sensor3: true,
   });
-  const [selectedDataset, setSelectedDataset] = useState("current");
-  const [isRealTime, setIsRealTime] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
   const [thresholds, setThresholds] = useState({
-    general: { warning: 2048 }, // Mid-range for 0-4095
+    general: { warning: 2048 },
   });
-  const [windowSize, setWindowSize] = useState(30); // 30 seconds window
+  const [windowSize, setWindowSize] = useState(30);
   const [isZoomed, setIsZoomed] = useState(false);
   const [timerRunning, setTimerRunning] = useState(false);
   const [resetTrigger, setResetTrigger] = useState(0);
   const [zoomArea, setZoomArea] = useState({ left: null, right: null, refAreaLeft: '', refAreaRight: '' });
   const [isSelecting, setIsSelecting] = useState(false);
+  const isRealTime = true;
   
   const chartRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -48,7 +56,7 @@ export const EnhancedSensorChart = () => {
     { key: "sensor3", label: "Capteur 3", color: "hsl(var(--sensor-3))", bgColor: "bg-sensor-3" },
   ];
 
-  // Initialisation - ne pas générer de fausses données
+  // Initialisation
   useEffect(() => {
     setData([]);
     setAllData([]);
@@ -57,12 +65,11 @@ export const EnhancedSensorChart = () => {
 
   // Mise à jour avec les vraies données du hardware
   useEffect(() => {
-    if (!isConnected || !currentData || selectedDataset !== "current" || isPaused) {
+    if (!isConnected || !currentData || isPaused) {
       return;
     }
 
-    // Ajouter les nouvelles données réelles
-    const newPoint = {
+    const newPoint: DataPoint = {
       timestamp: currentData.timestamp,
       time: currentData.time,
       sensor1: currentData.sensor1,
@@ -72,20 +79,12 @@ export const EnhancedSensorChart = () => {
 
     setData(prev => {
       const newData = [...prev, newPoint];
-      // Garder seulement les 30 derniers points
       return newData.slice(-windowSize);
     });
     
     setAllData(prev => [...prev, newPoint]);
     setTimerRunning(true);
-  }, [currentData, isConnected, selectedDataset, isPaused, windowSize]);
-
-  // Auto-scaling: keep only last 30 seconds of data visible
-  useEffect(() => {
-    if (data.length > windowSize) {
-      setData(prev => prev.slice(-windowSize));
-    }
-  }, [data.length, windowSize]);
+  }, [currentData, isConnected, isPaused, windowSize]);
 
   const toggleSensorVisibility = (sensor: string) => {
     setVisibleSensors(prev => ({
@@ -94,21 +93,30 @@ export const EnhancedSensorChart = () => {
     }));
   };
 
-  const loadHistoricalData = (datasetId: string) => {
-    setSelectedDataset(datasetId);
-    setIsRealTime(datasetId === "current");
-    setTimerRunning(datasetId === "current");
-    
-    if (datasetId !== "current") {
-      // Load simulated historical data
-      const historicalData = Array.from({ length: 50 }, (_, i) => ({
-        timestamp: Date.now() - (49 - i) * 2000,
-        time: new Date(Date.now() - (49 - i) * 2000).toLocaleTimeString(),
+  const toggleHistoricalDataset = (datasetId: string) => {
+    if (selectedDatasets.includes(datasetId)) {
+      // Remove dataset
+      setSelectedDatasets(prev => prev.filter(id => id !== datasetId));
+      setHistoricalData(prev => {
+        const newData = { ...prev };
+        delete newData[datasetId];
+        return newData;
+      });
+    } else {
+      // Add dataset
+      setSelectedDatasets(prev => [...prev, datasetId]);
+      // Generate simulated historical data
+      const historicalDataPoints: DataPoint[] = Array.from({ length: 50 }, (_, i) => ({
+        timestamp: Date.now() - (50 - i) * 1000,
+        time: `${String(Math.floor((50 - i) / 60)).padStart(2, '0')}:${String((50 - i) % 60).padStart(2, '0')}`,
         sensor1: Math.random() * 4095,
         sensor2: Math.random() * 4095,
         sensor3: Math.random() * 4095,
       }));
-      setData(historicalData);
+      setHistoricalData(prev => ({
+        ...prev,
+        [datasetId]: historicalDataPoints
+      }));
     }
   };
 
@@ -120,8 +128,6 @@ export const EnhancedSensorChart = () => {
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
     const timestamp = `${year}${month}${day}_${hours}${minutes}`;
-    
-    console.log('Timestamp généré:', timestamp); // Debug
     
     const csvContent = [
       ["Timestamp (ms)", "Capteur 1", "Capteur 2", "Capteur 3"],
@@ -145,11 +151,12 @@ export const EnhancedSensorChart = () => {
   const handleReset = () => {
     setData([]);
     setAllData([]);
-    setOverlayDatasets([]);
+    setSelectedDatasets([]);
+    setHistoricalData({});
     setIsZoomed(false);
     setTimerRunning(false);
-    setResetTrigger(prev => prev + 1); // Trigger timer reset
-    setZoomArea({ left: null, right: null, refAreaLeft: '', refAreaRight: '' }); // Reset zoom
+    setResetTrigger(prev => prev + 1);
+    setZoomArea({ left: null, right: null, refAreaLeft: '', refAreaRight: '' });
     
     toast({
       title: "Remise à zéro",
@@ -204,7 +211,6 @@ export const EnhancedSensorChart = () => {
           heightLeft -= pageHeight;
         }
         
-        // Add metrics
         const stats = calculateMetrics();
         pdf.addPage();
         pdf.text('Métriques des capteurs:', 20, 30);
@@ -251,7 +257,6 @@ export const EnhancedSensorChart = () => {
 
   const handleZoom = () => {
     if (zoomArea.left && zoomArea.right) {
-      // Reset zoom if already zoomed
       setZoomArea({ left: null, right: null, refAreaLeft: '', refAreaRight: '' });
       setIsZoomed(false);
     } else {
@@ -263,7 +268,6 @@ export const EnhancedSensorChart = () => {
     setIsPaused(!isPaused);
   };
 
-  // Zoom selection handlers
   const handleMouseDown = (e: any) => {
     if (e && e.activeLabel) {
       setZoomArea(prev => ({ ...prev, refAreaLeft: e.activeLabel }));
@@ -281,7 +285,6 @@ export const EnhancedSensorChart = () => {
     if (isSelecting && zoomArea.refAreaLeft && zoomArea.refAreaRight) {
       const { refAreaLeft, refAreaRight } = zoomArea;
       
-      // Find the indices of the selected area
       const leftIndex = data.findIndex(item => item.time === refAreaLeft);
       const rightIndex = data.findIndex(item => item.time === refAreaRight);
       
@@ -290,7 +293,6 @@ export const EnhancedSensorChart = () => {
         const endIndex = Math.max(leftIndex, rightIndex);
         
         if (endIndex - startIndex > 1) {
-          // Zoom to selected area
           setZoomArea({
             left: startIndex,
             right: endIndex,
@@ -312,13 +314,13 @@ export const EnhancedSensorChart = () => {
 
       {/* Controls */}
       <ChartControls
-        selectedDataset={selectedDataset}
+        selectedDatasets={selectedDatasets}
         historicalDatasets={historicalDatasets}
         isRealTime={isRealTime}
         visibleSensors={visibleSensors}
         sensorConfigs={sensorConfigs}
         thresholds={thresholds}
-        onDatasetChange={loadHistoricalData}
+        onDatasetToggle={toggleHistoricalDataset}
         onSensorToggle={toggleSensorVisibility}
         onExportData={exportData}
         onReset={handleReset}
@@ -382,7 +384,59 @@ export const EnhancedSensorChart = () => {
               strokeDasharray="5 5"
               label="Seuil d'alerte"
             />
+
+            {/* Historical data lines (dotted, behind real-time data) */}
+            {selectedDatasets.map((datasetId) => {
+              const dataset = historicalData[datasetId];
+              if (!dataset) return null;
+              
+              return [
+                visibleSensors.sensor1 && (
+                  <Line
+                    key={`${datasetId}-sensor1`}
+                    type="monotone"
+                    dataKey="sensor1"
+                    data={dataset}
+                    stroke={sensorConfigs[0].color}
+                    strokeWidth={1}
+                    strokeDasharray="5 5"
+                    dot={false}
+                    name={`${sensorConfigs[0].label} (${historicalDatasets.find(h => h.id === datasetId)?.label})`}
+                    opacity={0.6}
+                  />
+                ),
+                visibleSensors.sensor2 && (
+                  <Line
+                    key={`${datasetId}-sensor2`}
+                    type="monotone"
+                    dataKey="sensor2"
+                    data={dataset}
+                    stroke={sensorConfigs[1].color}
+                    strokeWidth={1}
+                    strokeDasharray="5 5"
+                    dot={false}
+                    name={`${sensorConfigs[1].label} (${historicalDatasets.find(h => h.id === datasetId)?.label})`}
+                    opacity={0.6}
+                  />
+                ),
+                visibleSensors.sensor3 && (
+                  <Line
+                    key={`${datasetId}-sensor3`}
+                    type="monotone"
+                    dataKey="sensor3"
+                    data={dataset}
+                    stroke={sensorConfigs[2].color}
+                    strokeWidth={1}
+                    strokeDasharray="5 5"
+                    dot={false}
+                    name={`${sensorConfigs[2].label} (${historicalDatasets.find(h => h.id === datasetId)?.label})`}
+                    opacity={0.6}
+                  />
+                ),
+              ].filter(Boolean);
+            })}
             
+            {/* Real-time data lines (solid, in front) */}
             {visibleSensors.sensor1 && (
               <Line
                 type="monotone"

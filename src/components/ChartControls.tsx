@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Activity, Download, Eye, EyeOff, RotateCcw, Camera, FileText, ZoomIn, Play, Pause } from "lucide-react";
 
 interface ChartControlsProps {
-  selectedDataset: string;
+  selectedDatasets: string[];
   historicalDatasets: Array<{ id: string; label: string }>;
   isRealTime: boolean;
   visibleSensors: Record<string, boolean>;
@@ -20,7 +20,7 @@ interface ChartControlsProps {
   thresholds: {
     general: { warning: number };
   };
-  onDatasetChange: (datasetId: string) => void;
+  onDatasetToggle: (datasetId: string) => void;
   onSensorToggle: (sensor: string) => void;
   onExportData: () => void;
   onReset: () => void;
@@ -33,13 +33,13 @@ interface ChartControlsProps {
 }
 
 export const ChartControls = ({
-  selectedDataset,
+  selectedDatasets,
   historicalDatasets,
   isRealTime,
   visibleSensors,
   sensorConfigs,
   thresholds,
-  onDatasetChange,
+  onDatasetToggle,
   onSensorToggle,
   onExportData,
   onReset,
@@ -55,21 +55,25 @@ export const ChartControls = ({
       {/* Main Controls */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          {/* Dataset Selection */}
-          <div className="flex items-center gap-2">
-            <Label>Jeu de données:</Label>
-            <Select value={selectedDataset} onValueChange={onDatasetChange}>
-              <SelectTrigger className="w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {historicalDatasets.map(dataset => (
-                  <SelectItem key={dataset.id} value={dataset.id}>
+          {/* Historical Data Selection */}
+          <div className="flex flex-col gap-2">
+            <Label className="text-sm font-medium">Données historiques (affichage en pointillés):</Label>
+            <div className="flex flex-wrap gap-2">
+              {historicalDatasets
+                .filter(dataset => dataset.id !== "current")
+                .map(dataset => (
+                <div key={dataset.id} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={dataset.id}
+                    checked={selectedDatasets.includes(dataset.id)}
+                    onCheckedChange={() => onDatasetToggle(dataset.id)}
+                  />
+                  <Label htmlFor={dataset.id} className="text-xs cursor-pointer">
                     {dataset.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                  </Label>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Real-time indicator */}

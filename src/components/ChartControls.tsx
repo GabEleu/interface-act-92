@@ -10,6 +10,7 @@ interface ChartControlsProps {
   selectedDatasets: string[];
   historicalDatasets: Array<{ id: string; label: string }>;
   isRealTime: boolean;
+  isRecording: boolean;
   visibleSensors: Record<string, boolean>;
   sensorConfigs: Array<{
     key: string;
@@ -30,12 +31,14 @@ interface ChartControlsProps {
   onZoom: () => void;
   isPaused: boolean;
   onPauseToggle: () => void;
+  onRecordingToggle: () => void;
 }
 
 export const ChartControls = ({
   selectedDatasets,
   historicalDatasets,
   isRealTime,
+  isRecording,
   visibleSensors,
   sensorConfigs,
   thresholds,
@@ -49,6 +52,7 @@ export const ChartControls = ({
   onZoom,
   isPaused,
   onPauseToggle,
+  onRecordingToggle,
 }: ChartControlsProps) => {
   return (
     <div className="space-y-4">
@@ -93,7 +97,14 @@ export const ChartControls = ({
         </div>
 
         <div className="flex items-center gap-2">
-          {isRealTime && (
+          <Button 
+            onClick={onRecordingToggle} 
+            variant={isRecording ? "destructive" : "default"}
+            size="sm"
+          >
+            {isRecording ? "Arrêter" : "Démarrer"} l'enregistrement
+          </Button>
+          {isRealTime && isRecording && (
             <Button onClick={onPauseToggle} variant="outline" size="sm">
               {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
             </Button>

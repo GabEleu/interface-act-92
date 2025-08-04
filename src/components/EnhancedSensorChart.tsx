@@ -152,40 +152,12 @@ export const EnhancedSensorChart = () => {
     }
   };
 
-  // Merge all data (current + historical) for display
-  const getMergedData = () => {
-    const merged = [...data];
-    
-    // Add historical data to each time point
-    selectedDatasets.forEach(datasetId => {
-      const historicalPoints = historicalData[datasetId];
-      if (historicalPoints) {
-        historicalPoints.forEach(point => {
-          // Find if we already have this time point
-          const existingIndex = merged.findIndex(d => d.time === point.time);
-          if (existingIndex >= 0) {
-            // Add historical data to existing point
-            merged[existingIndex] = {
-              ...merged[existingIndex],
-              [`${datasetId}_sensor1`]: point.sensor1,
-              [`${datasetId}_sensor2`]: point.sensor2,
-              [`${datasetId}_sensor3`]: point.sensor3,
-            };
-          } else {
-            // Create new point with historical data
-            merged.push({
-              ...point,
-              [`${datasetId}_sensor1`]: point.sensor1,
-              [`${datasetId}_sensor2`]: point.sensor2,
-              [`${datasetId}_sensor3`]: point.sensor3,
-            });
-          }
-        });
-      }
-    });
-    
-    // Sort by timestamp
-    return merged.sort((a, b) => a.timestamp - b.timestamp);
+  // Get chart data (only real-time data, historical data handled separately)
+  const getChartData = () => {
+    if (zoomArea.left && zoomArea.right) {
+      return data.slice(zoomArea.left, zoomArea.right + 1);
+    }
+    return data;
   };
 
   const exportData = () => {
@@ -416,7 +388,7 @@ export const EnhancedSensorChart = () => {
       <div ref={chartRef} className="h-96 w-full bg-card p-4 rounded-lg border">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart 
-            data={getMergedData()}
+            data={getChartData()}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
@@ -467,55 +439,72 @@ export const EnhancedSensorChart = () => {
               label="Seuil d'alerte"
             />
 
-            {/* Historical data lines (dotted, behind real-time data) */}
+            {/* Historical data lines as separate LineChart overlays */}
             {selectedDatasets.map((datasetId) => {
+              const dataset = historicalData[datasetId];
               const datasetLabel = historicalDatasets.find(h => h.id === datasetId)?.label || datasetId;
               
-              return [
-                visibleSensors.sensor1 && (
-                  <Line
-                    key={`${datasetId}-sensor1`}
-                    type="monotone"
-                    dataKey={`${datasetId}_sensor1`}
-                    stroke={sensorConfigs[0].color}
-                    strokeWidth={1}
-                    strokeDasharray="5 5"
-                    dot={false}
-                    name={`${sensorConfigs[0].label} (${datasetLabel})`}
-                    opacity={0.7}
-                    connectNulls={false}
-                  />
-                ),
-                visibleSensors.sensor2 && (
-                  <Line
-                    key={`${datasetId}-sensor2`}
-                    type="monotone"
-                    dataKey={`${datasetId}_sensor2`}
-                    stroke={sensorConfigs[1].color}
-                    strokeWidth={1}
-                    strokeDasharray="5 5"
-                    dot={false}
-                    name={`${sensorConfigs[1].label} (${datasetLabel})`}
-                    opacity={0.7}
-                    connectNulls={false}
-                  />
-                ),
-                visibleSensors.sensor3 && (
-                  <Line
-                    key={`${datasetId}-sensor3`}
-                    type="monotone"
-                    dataKey={`${datasetId}_sensor3`}
-                    stroke={sensorConfigs[2].color}
-                    strokeWidth={1}
-                    strokeDasharray="5 5"
-                    dot={false}
-                    name={`${sensorConfigs[2].label} (${datasetLabel})`}
-                    opacity={0.7}
-                    connectNulls={false}
-                  />
-                ),
-              ].filter(Boolean);
-            }).flat()}
+              if (!dataset || dataset.length === 0) return null;
+              
+              console.log(`Rendering historical dataset ${datasetId} with ${dataset.length} points`);
+              
+              // Render historical data as separate lines with their own data
+              return dataset.map((point, index) => {
+                const x = (index / (dataset.length - 1)) * 100; // Position as percentage
+                const y1 = 100 - ((point.sensor1 / 4095) * 100); // Invert Y for SVG
+                const y2 = 100 - ((point.sensor2 / 4095) * 100);
+                const y3 = 100 - ((point.sensor3 / 4095) * 100);
+                
+                if (index === 0) return null; // Skip first point for line drawing
+                
+                const prevPoint = dataset[index - 1];
+                const prevX = ((index - 1) / (dataset.length - 1)) * 100;
+                const prevY1 = 100 - ((prevPoint.sensor1 / 4095) * 100);
+                const prevY2 = 100 - ((prevPoint.sensor2 / 4095) * 100);
+                const prevY3 = 100 - ((prevPoint.sensor3 / 4095) * 100);
+                
+                return (
+                  <g key={`${datasetId}-${index}`}>
+                    {visibleSensors.sensor1 && (
+                      <line
+                        x1={`${prevX}%`}
+                        y1={`${prevY1}%`}
+                        x2={`${x}%`}
+                        y2={`${y1}%`}
+                        stroke={sensorConfigs[0].color}
+                        strokeWidth="1"
+                        strokeDasharray="5,5"
+                        opacity="0.7"
+                      />
+                    )}
+                    {visibleSensors.sensor2 && (
+                      <line
+                        x1={`${prevX}%`}
+                        y1={`${prevY2}%`}
+                        x2={`${x}%`}
+                        y2={`${y2}%`}
+                        stroke={sensorConfigs[1].color}
+                        strokeWidth="1"
+                        strokeDasharray="5,5"
+                        opacity="0.7"
+                      />
+                    )}
+                    {visibleSensors.sensor3 && (
+                      <line
+                        x1={`${prevX}%`}
+                        y1={`${prevY3}%`}
+                        x2={`${x}%`}
+                        y2={`${y3}%`}
+                        stroke={sensorConfigs[2].color}
+                        strokeWidth="1"
+                        strokeDasharray="5,5"
+                        opacity="0.7"
+                      />
+                    )}
+                  </g>
+                );
+              });
+            }).flat().filter(Boolean)}
             
             {/* Real-time data lines (solid, in front) */}
             {visibleSensors.sensor1 && (

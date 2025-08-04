@@ -114,17 +114,12 @@ export const EnhancedSensorChart = () => {
 
   const exportData = () => {
     const now = new Date();
-    const dateStr = now.toLocaleDateString('fr-FR').replace(/\//g, '-');
-    const timeStr = now.toLocaleTimeString('fr-FR', { hour12: false }).replace(/:/g, '-');
-    const timestamp = `${dateStr}_${timeStr}`;
-    const currentDataset = historicalDatasets.find(ds => ds.id === selectedDataset);
-    const datasetLabel = currentDataset?.label || 'données-inconnues';
-    
-    // Create filename with timestamp and dataset info
-    const sanitizedLabel = datasetLabel
-      .replace(/[^a-zA-Z0-9\s-]/g, '') // Remove special characters
-      .replace(/\s+/g, '-') // Replace spaces with dashes
-      .toLowerCase();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const timestamp = `${year}${month}${day}_${hours}${minutes}`;
     
     const csvContent = [
       ["Timestamp (ms)", "Temps", "Capteur 1", "Capteur 2", "Capteur 3"],
@@ -135,7 +130,7 @@ export const EnhancedSensorChart = () => {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${sanitizedLabel}_${timestamp}.csv`;
+    a.download = `data_${timestamp}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
     

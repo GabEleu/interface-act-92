@@ -7,7 +7,7 @@ import { LogOut, Activity, Settings, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { VibrationControls } from "@/components/VibrationControls";
 import { EnhancedSensorChart } from "@/components/EnhancedSensorChart";
-import { EnhancedDataRecording } from "@/components/EnhancedDataRecording";
+
 import { AlertsPanel } from "@/components/AlertsPanel";
 import { HardwareConnection } from "@/components/HardwareConnection";
 
@@ -79,18 +79,6 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          {/* Data Recording */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Enregistrement des Données</CardTitle>
-              <CardDescription>
-                Contrôlez l'acquisition et l'export des données
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <EnhancedDataRecording />
-            </CardContent>
-          </Card>
 
           {/* Hardware Connection */}
           <Card>

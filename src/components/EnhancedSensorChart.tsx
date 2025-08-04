@@ -3,6 +3,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { SensorDisplay } from "./SensorDisplay";
 import { ChartControls } from "./ChartControls";
 import { ChartTimer } from "./ChartTimer";
+import { EnhancedDataRecording } from "./EnhancedDataRecording";
 import { useToast } from "@/hooks/use-toast";
 import { useHardwareConnection } from "@/hooks/useHardwareConnection";
 import html2canvas from "html2canvas";
@@ -380,8 +381,15 @@ export const EnhancedSensorChart = () => {
 
   return (
     <div className="space-y-6">
-      {/* Sensor Display */}
-      <SensorDisplay data={data} sensorConfigs={sensorConfigs} />
+      {/* Sensor Display with Recording Controls */}
+      <div className="flex flex-col lg:flex-row gap-6">
+        <div className="flex-1">
+          <SensorDisplay data={data} sensorConfigs={sensorConfigs} />
+        </div>
+        <div className="lg:w-80">
+          <EnhancedDataRecording />
+        </div>
+      </div>
 
       {/* Controls */}
       <ChartControls

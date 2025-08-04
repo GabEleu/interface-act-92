@@ -102,10 +102,7 @@ export const EnhancedSensorChart = () => {
     });
     
     setAllData(prev => [...prev, newPoint]);
-    // Le timer ne se lance que si on enregistre
-    if (isRecording) {
-      setTimerRunning(true);
-    }
+    // Garder le timer en route pendant l'enregistrement (déjà démarré par handleRecordingToggle)
   }, [currentData, isConnected, isPaused, isRecording, windowSize]);
 
   const toggleSensorVisibility = (sensor: string) => {
@@ -312,8 +309,10 @@ export const EnhancedSensorChart = () => {
     setIsRecording(!isRecording);
     if (!isRecording) {
       // Start recording
-      setTimerRunning(false); // Reset timer when starting
-      setResetTrigger(prev => prev + 1); // Reset timer display
+      setResetTrigger(prev => prev + 1); // Reset timer display first
+      setTimeout(() => {
+        setTimerRunning(true); // Start timer immediately after reset
+      }, 100); // Small delay to ensure reset is processed
       toast({
         title: "Enregistrement démarré",
         description: "Les données sont maintenant enregistrées",
@@ -330,6 +329,7 @@ export const EnhancedSensorChart = () => {
 
   const handlePauseToggle = () => {
     setIsPaused(!isPaused);
+    // Le timer continue à tourner même en pause pour garder le temps total
   };
 
   const handleMouseDown = (e: any) => {

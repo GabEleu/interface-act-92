@@ -102,13 +102,11 @@ export const EnhancedDataRecording = () => {
     // Generate simulated CSV data with timestamp in milliseconds
     const startTime = new Date(session.timestamp).getTime();
     const csvContent = [
-      ["Timestamp (ms)", "Temps", "Capteur 1", "Capteur 2", "Capteur 3"],
+      ["Timestamp (ms)", "Capteur 1", "Capteur 2", "Capteur 3"],
       ...Array.from({ length: session.dataPoints }, (_, i) => {
         const timestamp = startTime + (i * 1000);
-        const time = new Date(timestamp).toLocaleTimeString();
         return [
           timestamp,
-          time,
           Math.round(Math.random() * 4095),
           Math.round(Math.random() * 4095),
           Math.round(Math.random() * 4095)
@@ -120,8 +118,14 @@ export const EnhancedDataRecording = () => {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    const timestamp = new Date(session.timestamp).toISOString().replace(/[:.]/g, '-');
-    a.download = `fsr-session-${session.id}-${timestamp}.csv`;
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const timestamp = `${year}${month}${day}_${hours}${minutes}`;
+    a.download = `data_${timestamp}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
   };

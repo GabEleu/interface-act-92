@@ -285,6 +285,7 @@ export const EnhancedSensorChart = () => {
     if (isSelecting && zoomArea.refAreaLeft && zoomArea.refAreaRight) {
       const { refAreaLeft, refAreaRight } = zoomArea;
       
+      // Find indices based on time values
       const leftIndex = data.findIndex(item => item.time === refAreaLeft);
       const rightIndex = data.findIndex(item => item.time === refAreaRight);
       
@@ -292,7 +293,8 @@ export const EnhancedSensorChart = () => {
         const startIndex = Math.min(leftIndex, rightIndex);
         const endIndex = Math.max(leftIndex, rightIndex);
         
-        if (endIndex - startIndex > 1) {
+        // Only zoom if we have a meaningful selection (more than 1 point)
+        if (endIndex - startIndex > 0) {
           setZoomArea({
             left: startIndex,
             right: endIndex,
@@ -300,6 +302,11 @@ export const EnhancedSensorChart = () => {
             refAreaRight: ''
           });
           setIsZoomed(true);
+          
+          toast({
+            title: "Zoom appliqué",
+            description: `Zone sélectionnée: ${data[startIndex].time} - ${data[endIndex].time}`,
+          });
         }
       }
     }
@@ -345,6 +352,7 @@ export const EnhancedSensorChart = () => {
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
+            margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
           >
             <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
             <XAxis 

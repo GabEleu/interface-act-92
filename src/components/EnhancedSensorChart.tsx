@@ -351,6 +351,12 @@ export const EnhancedSensorChart = () => {
               dataKey="time" 
               tick={{ fontSize: 12 }}
               interval="preserveStartEnd"
+              domain={zoomArea.left && zoomArea.right ? 
+                [data[zoomArea.left]?.time, data[zoomArea.right]?.time] : 
+                ['dataMin', 'dataMax']
+              }
+              type="category"
+              scale="point"
             />
             <YAxis 
               tick={{ fontSize: 12 }}

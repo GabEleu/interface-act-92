@@ -34,12 +34,12 @@ export const EnhancedSensorChart = () => {
   const { toast } = useToast();
   const { isConnected, currentData, isConnecting, connect, disconnect } = useHardwareConnection();
 
-  // Historical datasets with proper timestamps
+  // Historical datasets with CSV filename format
   const historicalDatasets = [
     { id: "current", label: "Données actuelles" },
-    { id: "session1", label: "Enregistrement du 15/01/2024 à 14:30:25" },
-    { id: "session2", label: "Enregistrement du 14/01/2024 à 09:15:48" },
-    { id: "session3", label: "Enregistrement du 13/01/2024 à 16:42:12" },
+    { id: "session1", label: "data_20250115_1430.csv" },
+    { id: "session2", label: "data_20250114_0915.csv" },
+    { id: "session3", label: "data_20250113_1642.csv" },
   ];
 
   const sensorConfigs = [

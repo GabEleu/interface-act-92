@@ -17,35 +17,12 @@ interface RecordingSession {
   dataPoints: number;
 }
 
-interface EnhancedDataRecordingProps {
-  isRecording?: boolean;
-  isPaused?: boolean;
-  duration?: number;
-  currentTime?: number;
-  onDurationChange?: (duration: number) => void;
-  onCurrentTimeChange?: (time: number) => void;
-}
-
-export const EnhancedDataRecording = ({
-  isRecording: externalIsRecording = false,
-  isPaused: externalIsPaused = false,
-  duration: externalDuration = 60,
-  currentTime: externalCurrentTime = 0,
-  onDurationChange,
-  onCurrentTimeChange,
-}: EnhancedDataRecordingProps) => {
-  const [internalIsRecording, setInternalIsRecording] = useState(false);
-  const [internalIsPaused, setInternalIsPaused] = useState(false);
-  const [internalDuration, setInternalDuration] = useState(60);
-  const [internalCurrentTime, setInternalCurrentTime] = useState(0);
-  
-  // Use external props if provided, otherwise use internal state
-  const isRecording = externalIsRecording || internalIsRecording;
-  const isPaused = externalIsPaused || internalIsPaused;
-  const duration = externalDuration || internalDuration;
-  const currentTime = externalCurrentTime || internalCurrentTime;
-
+export const EnhancedDataRecording = () => {
+  const [isRecording, setIsRecording] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [duration, setDuration] = useState(60);
   const [customDuration, setCustomDuration] = useState("");
+  const [currentTime, setCurrentTime] = useState(0);
   const [sessions, setSessions] = useState<RecordingSession[]>([]);
   const { toast } = useToast();
 
@@ -64,52 +41,44 @@ export const EnhancedDataRecording = ({
 
     if (isRecording && !isPaused) {
       interval = setInterval(() => {
-        const newTime = currentTime + 1;
-        if (onCurrentTimeChange) {
-          onCurrentTimeChange(newTime);
-        } else {
-          setInternalCurrentTime(prev => {
-            if (prev >= duration) {
-              handleStopRecording();
-              return prev;
-            }
-            return prev + 1;
-          });
-        }
+        setCurrentTime(prev => {
+          if (prev >= duration) {
+            handleStopRecording();
+            return prev;
+          }
+          return prev + 1;
+        });
       }, 1000);
     }
 
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isRecording, isPaused, duration, currentTime, onCurrentTimeChange]);
+  }, [isRecording, isPaused, duration]);
 
   const handleStartRecording = () => {
-    // This function is now unused since controls are external
-    setInternalIsRecording(true);
-    setInternalIsPaused(false);
-    setInternalCurrentTime(0);
+    setIsRecording(true);
+    setIsPaused(false);
+    setCurrentTime(0);
     
     toast({
       title: "Enregistrement démarré",
-      description: `Durée: ${formatTime(duration)} - Timer synchronisé`,
+      description: `Durée: ${formatTime(duration)}`,
     });
   };
 
   const handlePauseRecording = () => {
-    // This function is now unused since controls are external
-    setInternalIsPaused(!isPaused);
+    setIsPaused(!isPaused);
     
     toast({
       title: isPaused ? "Enregistrement repris" : "Enregistrement en pause",
-      description: `Temps écoulé: ${formatTime(currentTime)} - Timer ${isPaused ? 'repris' : 'en pause'}`,
+      description: `Temps écoulé: ${formatTime(currentTime)}`,
     });
   };
 
   const handleStopRecording = () => {
-    // This function is now unused since controls are external
-    setInternalIsRecording(false);
-    setInternalIsPaused(false);
+    setIsRecording(false);
+    setIsPaused(false);
     
     const newSession: RecordingSession = {
       id: Date.now().toString(),
@@ -121,20 +90,12 @@ export const EnhancedDataRecording = ({
     
     setSessions(prev => [...prev, newSession]);
     exportSessionData(newSession);
+    setCurrentTime(0);
     
     toast({
       title: "Enregistrement terminé",
-      description: `Session sauvegardée: ${formatTime(currentTime)} - Timer arrêté`,
+      description: `Session sauvegardée: ${formatTime(currentTime)}`,
     });
-    
-    // Reset timer after stop
-    setTimeout(() => {
-      if (onCurrentTimeChange) {
-        onCurrentTimeChange(0);
-      } else {
-        setInternalCurrentTime(0);
-      }
-    }, 100);
   };
 
   const exportSessionData = (session: RecordingSession) => {
@@ -176,14 +137,10 @@ export const EnhancedDataRecording = ({
   };
 
   const handleDurationChange = (value: string) => {
-    const newDuration = value === "custom" 
-      ? parseInt(customDuration) || 60 
-      : parseInt(value);
-    
-    if (onDurationChange) {
-      onDurationChange(newDuration);
+    if (value === "custom") {
+      setDuration(parseInt(customDuration) || 60);
     } else {
-      setInternalDuration(newDuration);
+      setDuration(parseInt(value));
     }
   };
 
@@ -235,8 +192,31 @@ export const EnhancedDataRecording = ({
           </div>
         </div>
 
-        {/* Recording Controls - Moved to ChartControls */}
-        
+        {/* Recording Controls */}
+        <div className="flex items-center gap-4">
+          {!isRecording ? (
+            <Button onClick={handleStartRecording} className="bg-primary hover:bg-primary-hover">
+              <Play className="h-4 w-4 mr-2" />
+              Démarrer
+            </Button>
+          ) : (
+            <>
+              <Button onClick={handlePauseRecording} variant="secondary">
+                {isPaused ? <Play className="h-4 w-4 mr-2" /> : <Pause className="h-4 w-4 mr-2" />}
+                {isPaused ? "Reprendre" : "Pause"}
+              </Button>
+              <Button onClick={handleStopRecording} variant="destructive">
+                <Square className="h-4 w-4 mr-2" />
+                Arrêter
+              </Button>
+            </>
+          )}
+          
+          <Badge variant={isRecording ? (isPaused ? "outline" : "default") : "secondary"}>
+            {isRecording ? (isPaused ? "En pause" : "En cours") : "Arrêté"}
+          </Badge>
+        </div>
+
         {/* Progress Display */}
         {isRecording && (
           <div className="space-y-2">

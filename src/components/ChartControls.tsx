@@ -4,13 +4,12 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Activity, Download, Eye, EyeOff, RotateCcw, Camera, FileText, ZoomIn, Play, Pause, Square, Clock } from "lucide-react";
+import { Activity, Download, Eye, EyeOff, RotateCcw, Camera, FileText, ZoomIn, Play, Pause } from "lucide-react";
 
 interface ChartControlsProps {
   selectedDatasets: string[];
   historicalDatasets: Array<{ id: string; label: string }>;
   isRealTime: boolean;
-  isRecording: boolean;
   visibleSensors: Record<string, boolean>;
   sensorConfigs: Array<{
     key: string;
@@ -31,20 +30,12 @@ interface ChartControlsProps {
   onZoom: () => void;
   isPaused: boolean;
   onPauseToggle: () => void;
-  onRecordingToggle: () => void;
-  // Recording states from EnhancedDataRecording
-  recordingDuration: number;
-  recordingCurrentTime: number;
-  isRecordingPaused: boolean;
-  onRecordingPauseToggle: () => void;
-  onRecordingStop: () => void;
 }
 
 export const ChartControls = ({
   selectedDatasets,
   historicalDatasets,
   isRealTime,
-  isRecording,
   visibleSensors,
   sensorConfigs,
   thresholds,
@@ -58,18 +49,7 @@ export const ChartControls = ({
   onZoom,
   isPaused,
   onPauseToggle,
-  onRecordingToggle,
-  recordingDuration,
-  recordingCurrentTime,
-  isRecordingPaused,
-  onRecordingPauseToggle,
-  onRecordingStop,
 }: ChartControlsProps) => {
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
   return (
     <div className="space-y-4">
       {/* Main Controls */}
@@ -96,45 +76,6 @@ export const ChartControls = ({
             </div>
           </div>
 
-          {/* Recording Controls */}
-          <div className="flex flex-col gap-2">
-            <Label className="text-sm font-medium">Contrôles d'enregistrement:</Label>
-            <div className="flex items-center gap-2">
-              {!isRecording ? (
-                <Button onClick={onRecordingToggle} className="bg-primary hover:bg-primary-hover">
-                  <Play className="h-4 w-4 mr-2" />
-                  Démarrer l'enregistrement
-                </Button>
-              ) : (
-                <>
-                  <Button onClick={onRecordingPauseToggle} variant="secondary" size="sm">
-                    {isRecordingPaused ? <Play className="h-4 w-4 mr-1" /> : <Pause className="h-4 w-4 mr-1" />}
-                    {isRecordingPaused ? "Reprendre" : "Pause"}
-                  </Button>
-                  <Button onClick={onRecordingStop} variant="destructive" size="sm">
-                    <Square className="h-4 w-4 mr-1" />
-                    Arrêter
-                  </Button>
-                </>
-              )}
-              
-              <Badge variant={isRecording ? (isRecordingPaused ? "outline" : "default") : "secondary"}>
-                {isRecording ? (isRecordingPaused ? "En pause" : "En cours") : "Arrêté"}
-              </Badge>
-              
-              {isRecording && (
-                <div className="flex items-center gap-1 text-xs font-mono">
-                  <Clock className="h-3 w-3" />
-                  <span className={!isRecordingPaused ? "text-primary" : "text-muted-foreground"}>
-                    {formatTime(recordingCurrentTime)}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
           {/* Real-time indicator */}
           {isRealTime && !isPaused && (
             <Badge className="bg-success text-success-foreground">
@@ -149,8 +90,10 @@ export const ChartControls = ({
               En pause
             </Badge>
           )}
-          
-          {isRealTime && isRecording && (
+        </div>
+
+        <div className="flex items-center gap-2">
+          {isRealTime && (
             <Button onClick={onPauseToggle} variant="outline" size="sm">
               {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
             </Button>

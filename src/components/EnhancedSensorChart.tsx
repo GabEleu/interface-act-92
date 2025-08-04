@@ -3,7 +3,6 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { SensorDisplay } from "./SensorDisplay";
 import { ChartControls } from "./ChartControls";
 import { ChartTimer } from "./ChartTimer";
-import { EnhancedDataRecording } from "./EnhancedDataRecording";
 import { useToast } from "@/hooks/use-toast";
 import { useHardwareConnection } from "@/hooks/useHardwareConnection";
 import html2canvas from "html2canvas";
@@ -28,13 +27,6 @@ export const EnhancedSensorChart = () => {
     sensor3: true,
   });
   const [isPaused, setIsPaused] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
-  
-  // Recording states for EnhancedDataRecording
-  const [recordingDuration, setRecordingDuration] = useState(60);
-  const [recordingCurrentTime, setRecordingCurrentTime] = useState(0);
-  const [isRecordingPaused, setIsRecordingPaused] = useState(false);
-  
   const [thresholds, setThresholds] = useState({
     general: { warning: 2048 },
   });
@@ -79,15 +71,15 @@ export const EnhancedSensorChart = () => {
       console.log('Setting test data:', testData);
       setData(testData);
       setAllData(testData);
-      // Ne pas démarrer le timer automatiquement
+      setTimerRunning(true);
     }
   }, [isConnected]);
 
   // Mise à jour avec les vraies données du hardware
   useEffect(() => {
-    console.log('Hardware connection status:', { isConnected, currentData, isPaused, isRecording });
+    console.log('Hardware connection status:', { isConnected, currentData, isPaused });
     
-    if (!isConnected || !currentData || isPaused || !isRecording) {
+    if (!isConnected || !currentData || isPaused) {
       return;
     }
 
@@ -109,8 +101,8 @@ export const EnhancedSensorChart = () => {
     });
     
     setAllData(prev => [...prev, newPoint]);
-    // Garder le timer en route pendant l'enregistrement (déjà démarré par handleRecordingToggle)
-  }, [currentData, isConnected, isPaused, isRecording, windowSize]);
+    setTimerRunning(true);
+  }, [currentData, isConnected, isPaused, windowSize]);
 
   const toggleSensorVisibility = (sensor: string) => {
     setVisibleSensors(prev => ({
@@ -312,52 +304,8 @@ export const EnhancedSensorChart = () => {
     }
   };
 
-  const handleRecordingToggle = () => {
-    setIsRecording(!isRecording);
-    if (!isRecording) {
-      // Start recording
-      setResetTrigger(prev => prev + 1);
-      setRecordingCurrentTime(0);
-      setIsRecordingPaused(false);
-      setTimeout(() => {
-        setTimerRunning(true);
-      }, 100);
-      toast({
-        title: "Enregistrement démarré",
-        description: "Les données sont maintenant enregistrées",
-      });
-    } else {
-      // Stop recording
-      setTimerRunning(false);
-      setIsRecordingPaused(false);
-      toast({
-        title: "Enregistrement arrêté",
-        description: "L'enregistrement des données est terminé",
-      });
-    }
-  };
-
-  const handleRecordingPauseToggle = () => {
-    setIsRecordingPaused(!isRecordingPaused);
-    toast({
-      title: isRecordingPaused ? "Enregistrement repris" : "Enregistrement en pause",
-      description: `Temps écoulé: ${Math.floor(recordingCurrentTime / 60)}:${String(recordingCurrentTime % 60).padStart(2, '0')}`,
-    });
-  };
-
-  const handleRecordingStop = () => {
-    setIsRecording(false);
-    setIsRecordingPaused(false);
-    setTimerRunning(false);
-    toast({
-      title: "Enregistrement terminé",
-      description: "Session sauvegardée avec succès",
-    });
-  };
-
   const handlePauseToggle = () => {
     setIsPaused(!isPaused);
-    // Le timer continue à tourner même en pause pour garder le temps total
   };
 
   const handleMouseDown = (e: any) => {
@@ -408,29 +356,14 @@ export const EnhancedSensorChart = () => {
 
   return (
     <div className="space-y-6">
-      {/* Sensor Display with Recording Controls */}
-      <div className="flex flex-col lg:flex-row gap-6">
-        <div className="flex-1">
-          <SensorDisplay data={data} sensorConfigs={sensorConfigs} />
-        </div>
-        <div className="lg:w-80">
-          <EnhancedDataRecording 
-            isRecording={isRecording}
-            isPaused={isRecordingPaused}
-            duration={recordingDuration}
-            currentTime={recordingCurrentTime}
-            onDurationChange={setRecordingDuration}
-            onCurrentTimeChange={setRecordingCurrentTime}
-          />
-        </div>
-      </div>
+      {/* Sensor Display */}
+      <SensorDisplay data={data} sensorConfigs={sensorConfigs} />
 
       {/* Controls */}
       <ChartControls
         selectedDatasets={selectedDatasets}
         historicalDatasets={historicalDatasets}
         isRealTime={isRealTime}
-        isRecording={isRecording}
         visibleSensors={visibleSensors}
         sensorConfigs={sensorConfigs}
         thresholds={thresholds}
@@ -444,17 +377,11 @@ export const EnhancedSensorChart = () => {
         onZoom={handleZoom}
         isPaused={isPaused}
         onPauseToggle={handlePauseToggle}
-        onRecordingToggle={handleRecordingToggle}
-        recordingDuration={recordingDuration}
-        recordingCurrentTime={recordingCurrentTime}
-        isRecordingPaused={isRecordingPaused}
-        onRecordingPauseToggle={handleRecordingPauseToggle}
-        onRecordingStop={handleRecordingStop}
       />
 
       {/* Timer */}
       <div className="flex justify-center">
-        <ChartTimer isRunning={timerRunning && isRecording && !isPaused} resetTrigger={resetTrigger} />
+        <ChartTimer isRunning={timerRunning && !isPaused} resetTrigger={resetTrigger} />
       </div>
 
       {/* Chart */}

@@ -59,11 +59,11 @@ export const EnhancedDataRecording = () => {
   const handleStartRecording = () => {
     setIsRecording(true);
     setIsPaused(false);
-    setCurrentTime(0);
+    setCurrentTime(0); // Reset timer immediately when starting
     
     toast({
       title: "Enregistrement démarré",
-      description: `Durée: ${formatTime(duration)}`,
+      description: `Durée: ${formatTime(duration)} - Timer synchronisé`,
     });
   };
 
@@ -72,7 +72,7 @@ export const EnhancedDataRecording = () => {
     
     toast({
       title: isPaused ? "Enregistrement repris" : "Enregistrement en pause",
-      description: `Temps écoulé: ${formatTime(currentTime)}`,
+      description: `Temps écoulé: ${formatTime(currentTime)} - Timer ${isPaused ? 'repris' : 'en pause'}`,
     });
   };
 
@@ -90,12 +90,16 @@ export const EnhancedDataRecording = () => {
     
     setSessions(prev => [...prev, newSession]);
     exportSessionData(newSession);
-    setCurrentTime(0);
     
     toast({
       title: "Enregistrement terminé",
-      description: `Session sauvegardée: ${formatTime(currentTime)}`,
+      description: `Session sauvegardée: ${formatTime(currentTime)} - Timer arrêté`,
     });
+    
+    // Reset timer after stop
+    setTimeout(() => {
+      setCurrentTime(0);
+    }, 100);
   };
 
   const exportSessionData = (session: RecordingSession) => {
@@ -197,7 +201,7 @@ export const EnhancedDataRecording = () => {
           {!isRecording ? (
             <Button onClick={handleStartRecording} className="bg-primary hover:bg-primary-hover">
               <Play className="h-4 w-4 mr-2" />
-              Démarrer
+              Démarrer l'enregistrement
             </Button>
           ) : (
             <>
@@ -207,7 +211,7 @@ export const EnhancedDataRecording = () => {
               </Button>
               <Button onClick={handleStopRecording} variant="destructive">
                 <Square className="h-4 w-4 mr-2" />
-                Arrêter
+                Arrêter l'enregistrement
               </Button>
             </>
           )}
@@ -215,6 +219,14 @@ export const EnhancedDataRecording = () => {
           <Badge variant={isRecording ? (isPaused ? "outline" : "default") : "secondary"}>
             {isRecording ? (isPaused ? "En pause" : "En cours") : "Arrêté"}
           </Badge>
+          
+          {/* Timer Display */}
+          <div className="flex items-center gap-2 text-sm font-mono">
+            <Clock className="h-4 w-4" />
+            <span className={isRecording && !isPaused ? "text-primary" : "text-muted-foreground"}>
+              {formatTime(currentTime)}
+            </span>
+          </div>
         </div>
 
         {/* Progress Display */}

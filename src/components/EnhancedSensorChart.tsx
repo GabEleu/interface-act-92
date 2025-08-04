@@ -133,9 +133,9 @@ export const EnhancedSensorChart = () => {
       const historicalDataPoints: DataPoint[] = Array.from({ length: 50 }, (_, i) => ({
         timestamp: baseTime + (i * 1000),
         time: `${String(Math.floor(i / 60)).padStart(2, '0')}:${String(i % 60).padStart(2, '0')}`,
-        sensor1: Math.random() * 4095,
-        sensor2: Math.random() * 4095,
-        sensor3: Math.random() * 4095,
+        sensor1: Math.random() * 3000 + 500, // Different range for visibility
+        sensor2: Math.random() * 3000 + 800,
+        sensor3: Math.random() * 3000 + 1200,
       }));
       
       console.log(`Loading historical dataset ${datasetId}:`, historicalDataPoints);
@@ -150,6 +150,42 @@ export const EnhancedSensorChart = () => {
         description: `${historicalDatasets.find(h => h.id === datasetId)?.label} affiché en pointillés`,
       });
     }
+  };
+
+  // Merge all data (current + historical) for display
+  const getMergedData = () => {
+    const merged = [...data];
+    
+    // Add historical data to each time point
+    selectedDatasets.forEach(datasetId => {
+      const historicalPoints = historicalData[datasetId];
+      if (historicalPoints) {
+        historicalPoints.forEach(point => {
+          // Find if we already have this time point
+          const existingIndex = merged.findIndex(d => d.time === point.time);
+          if (existingIndex >= 0) {
+            // Add historical data to existing point
+            merged[existingIndex] = {
+              ...merged[existingIndex],
+              [`${datasetId}_sensor1`]: point.sensor1,
+              [`${datasetId}_sensor2`]: point.sensor2,
+              [`${datasetId}_sensor3`]: point.sensor3,
+            };
+          } else {
+            // Create new point with historical data
+            merged.push({
+              ...point,
+              [`${datasetId}_sensor1`]: point.sensor1,
+              [`${datasetId}_sensor2`]: point.sensor2,
+              [`${datasetId}_sensor3`]: point.sensor3,
+            });
+          }
+        });
+      }
+    });
+    
+    // Sort by timestamp
+    return merged.sort((a, b) => a.timestamp - b.timestamp);
   };
 
   const exportData = () => {
@@ -380,7 +416,7 @@ export const EnhancedSensorChart = () => {
       <div ref={chartRef} className="h-96 w-full bg-card p-4 rounded-lg border">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart 
-            data={zoomArea.left && zoomArea.right ? data.slice(zoomArea.left, zoomArea.right + 1) : data}
+            data={getMergedData()}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
@@ -433,59 +469,53 @@ export const EnhancedSensorChart = () => {
 
             {/* Historical data lines (dotted, behind real-time data) */}
             {selectedDatasets.map((datasetId) => {
-              const dataset = historicalData[datasetId];
               const datasetLabel = historicalDatasets.find(h => h.id === datasetId)?.label || datasetId;
               
-              if (!dataset || dataset.length === 0) return null;
-              
-              // Create separate LineChart components for historical data
-              return (
-                <g key={`historical-${datasetId}`}>
-                  {visibleSensors.sensor1 && (
-                    <Line
-                      type="monotone"
-                      dataKey="sensor1"
-                      data={dataset}
-                      stroke={sensorConfigs[0].color}
-                      strokeWidth={1}
-                      strokeDasharray="5 5"
-                      dot={false}
-                      name={`${sensorConfigs[0].label} (${datasetLabel})`}
-                      opacity={0.6}
-                      connectNulls={false}
-                    />
-                  )}
-                  {visibleSensors.sensor2 && (
-                    <Line
-                      type="monotone"
-                      dataKey="sensor2"
-                      data={dataset}
-                      stroke={sensorConfigs[1].color}
-                      strokeWidth={1}
-                      strokeDasharray="5 5"
-                      dot={false}
-                      name={`${sensorConfigs[1].label} (${datasetLabel})`}
-                      opacity={0.6}
-                      connectNulls={false}
-                    />
-                  )}
-                  {visibleSensors.sensor3 && (
-                    <Line
-                      type="monotone"
-                      dataKey="sensor3"
-                      data={dataset}
-                      stroke={sensorConfigs[2].color}
-                      strokeWidth={1}
-                      strokeDasharray="5 5"
-                      dot={false}
-                      name={`${sensorConfigs[2].label} (${datasetLabel})`}
-                      opacity={0.6}
-                      connectNulls={false}
-                    />
-                  )}
-                </g>
-              );
-            })}
+              return [
+                visibleSensors.sensor1 && (
+                  <Line
+                    key={`${datasetId}-sensor1`}
+                    type="monotone"
+                    dataKey={`${datasetId}_sensor1`}
+                    stroke={sensorConfigs[0].color}
+                    strokeWidth={1}
+                    strokeDasharray="5 5"
+                    dot={false}
+                    name={`${sensorConfigs[0].label} (${datasetLabel})`}
+                    opacity={0.7}
+                    connectNulls={false}
+                  />
+                ),
+                visibleSensors.sensor2 && (
+                  <Line
+                    key={`${datasetId}-sensor2`}
+                    type="monotone"
+                    dataKey={`${datasetId}_sensor2`}
+                    stroke={sensorConfigs[1].color}
+                    strokeWidth={1}
+                    strokeDasharray="5 5"
+                    dot={false}
+                    name={`${sensorConfigs[1].label} (${datasetLabel})`}
+                    opacity={0.7}
+                    connectNulls={false}
+                  />
+                ),
+                visibleSensors.sensor3 && (
+                  <Line
+                    key={`${datasetId}-sensor3`}
+                    type="monotone"
+                    dataKey={`${datasetId}_sensor3`}
+                    stroke={sensorConfigs[2].color}
+                    strokeWidth={1}
+                    strokeDasharray="5 5"
+                    dot={false}
+                    name={`${sensorConfigs[2].label} (${datasetLabel})`}
+                    opacity={0.7}
+                    connectNulls={false}
+                  />
+                ),
+              ].filter(Boolean);
+            }).flat()}
             
             {/* Real-time data lines (solid, in front) */}
             {visibleSensors.sensor1 && (
